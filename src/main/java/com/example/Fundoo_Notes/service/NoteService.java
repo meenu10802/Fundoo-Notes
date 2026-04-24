@@ -9,6 +9,8 @@ import com.example.Fundoo_Notes.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class NoteService {
 
@@ -33,5 +35,11 @@ public class NoteService {
         noteRepository.save(note);
 
         return "Note Created Successfully";
+    }
+
+    public List<Note> getUserNotes(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return noteRepository.findByUserIdAndIsDeletedFalse(user.getId());
     }
 }
