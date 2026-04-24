@@ -1,5 +1,6 @@
 package com.example.Fundoo_Notes.security;
 
+import com.example.Fundoo_Notes.entity.Role;
 import com.example.Fundoo_Notes.entity.User;
 import com.example.Fundoo_Notes.repository.UserRepository;
 import com.example.Fundoo_Notes.service.RedisTokenService;
@@ -12,8 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -39,54 +40,44 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        System.out.println("✅ JWT FILTER HIT");
-
         String header = request.getHeader("Authorization");
 
-        // ✅ Step 1: Check header
-        if (header != null) {
-            String token = header.startsWith("Bearer ") ? header.substring(7) : header;
+        if (header != null && header.startsWith("Bearer ")) {
+
+            String token = header.substring(7);
 
             try {
-                // ✅ Step 2: Extract email
                 String email = jwtUtil.extractEmail(token);
 
-                // ✅ Step 3: Avoid duplicate auth
-                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (email != null &&
+                        SecurityContextHolder.getContext().getAuthentication() == null &&
+                        jwtUtil.validateToken(token) &&
+                        redisTokenService.isJwtCached(token)) {
 
-                    // ✅ Step 4: Validate token
-                    if (jwtUtil.validateToken(token) && redisTokenService.isJwtCached(token)) {
+                    User user = userRepository.findByEmail(email)
+                            .orElse(null);
 
-                        // ✅ Step 5: Fetch user from DB
-                        User user = userRepository.findByEmail(email)
-                                .orElse(null);
+                    if (user != null) {
+                        Role role = user.getRole() != null ? user.getRole() : Role.USER;
 
-                        if (user != null) {
+                        UsernamePasswordAuthenticationToken auth =
+                                new UsernamePasswordAuthenticationToken(
+                                        user.getEmail(),
+                                        null,
+                                        List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
+                                );
 
-                            // ✅ Step 6: Set ROLE properly
-                            UsernamePasswordAuthenticationToken auth =
-                                    new UsernamePasswordAuthenticationToken(
-                                            user.getEmail(),
-                                            null,
-                                            List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
-                                    );
+                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                            auth.setDetails(
-                                    new WebAuthenticationDetailsSource().buildDetails(request)
-                            );
-
-                            // ✅ Step 7: Set security context
-                            SecurityContextHolder.getContext().setAuthentication(auth);
-                        }
+                        SecurityContextHolder.getContext().setAuthentication(auth);
                     }
                 }
 
             } catch (Exception e) {
-                System.out.println("❌ JWT ERROR: " + e.getMessage());
+                System.out.println("JWT validation failed: " + e.getMessage());
             }
         }
 
-        // ✅ Step 8: Continue filter chain
         filterChain.doFilter(request, response);
     }
 }
