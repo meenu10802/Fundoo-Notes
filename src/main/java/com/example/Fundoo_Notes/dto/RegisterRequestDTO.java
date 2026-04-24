@@ -1,27 +1,22 @@
-package com.example.Fundoo_Notes.entity;
+package com.example.Fundoo_Notes.dto;
 
-import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-@Entity
-@Table(name = "users")
-public class User {
+public class RegisterRequestDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    @NotBlank(message = "Name is required")
     private String name;
 
-    @Column(unique = true)
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
     private String email;
 
+    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
     // Getters & Setters
-    public Long getId() {
-        return id;
-    }
-
     public String getName() {
         return name;
     }
