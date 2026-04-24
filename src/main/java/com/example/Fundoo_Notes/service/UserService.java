@@ -22,6 +22,9 @@ public class UserService {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private RedisTokenService redisTokenService;
+
     public String registerUser(UserRegisterRequest dto) {
 
         User user = new User();
@@ -49,8 +52,9 @@ public class UserService {
             throw new RuntimeException("Invalid password");
         }
 
-        // ✅ include role in token (optional advanced)
-        return jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getEmail());
+        redisTokenService.cacheJwt(token, user.getEmail(), 3600);
+        return token;
     }
 
     // ✅ NEW METHOD (PROFILE)

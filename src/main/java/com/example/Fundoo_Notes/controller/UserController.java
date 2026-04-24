@@ -32,7 +32,10 @@ public class UserController {
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
 
         String header = request.getHeader("Authorization");
-        String token = header.substring(7);
+        if (header == null || header.isBlank()) {
+            throw new RuntimeException("Missing Authorization header");
+        }
+        String token = header.startsWith("Bearer ") ? header.substring(7) : header;
 
         String email = jwtUtil.extractEmail(token);
 

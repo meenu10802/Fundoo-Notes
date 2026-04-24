@@ -2,6 +2,7 @@ package com.example.Fundoo_Notes.security;
 
 import com.example.Fundoo_Notes.entity.User;
 import com.example.Fundoo_Notes.repository.UserRepository;
+import com.example.Fundoo_Notes.service.RedisTokenService;
 import com.example.Fundoo_Notes.util.JwtUtil;
 
 import jakarta.servlet.FilterChain;
@@ -29,6 +30,9 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private RedisTokenService redisTokenService;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -40,9 +44,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         // ✅ Step 1: Check header
-        if (header != null && header.startsWith("Bearer ")) {
-
-            String token = header.substring(7);
+        if (header != null) {
+            String token = header.startsWith("Bearer ") ? header.substring(7) : header;
 
             try {
                 // ✅ Step 2: Extract email
@@ -52,7 +55,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
                     // ✅ Step 4: Validate token
-                    if (jwtUtil.validateToken(token)) {
+                    if (jwtUtil.validateToken(token) && redisTokenService.isJwtCached(token)) {
 
                         // ✅ Step 5: Fetch user from DB
                         User user = userRepository.findByEmail(email)
