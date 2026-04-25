@@ -43,7 +43,7 @@ public class NoteService {
         rabbitMQProducer.sendNoteCreationEvent(
                 new NoteCreationEvent(savedNote.getUserId(), savedNote.getTitle())
         );
-
+        jmsProducer.sendMessage("Note Created for userId: " + savedNote.getUserId());
         return "Note Created Successfully";
     }
 

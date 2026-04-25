@@ -26,7 +26,8 @@ public class UserService {
 
     @Autowired
     private JwtUtil jwtUtil;
-
+    @Autowired
+    private JmsProducer jmsProducer;
     @Autowired
     private RabbitMQProducer rabbitMQProducer;
 
@@ -55,7 +56,7 @@ public class UserService {
         rabbitMQProducer.sendUserRegistrationEvent(
                 new UserRegistrationEvent(savedUser.getName(), savedUser.getEmail())
         );
-
+        jmsProducer.sendMessage("User Registered: " + savedUser.getEmail());
         return "User Registered Successfully";
     }
 

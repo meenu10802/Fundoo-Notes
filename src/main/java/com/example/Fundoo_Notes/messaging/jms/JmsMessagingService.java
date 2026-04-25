@@ -13,18 +13,18 @@ public class JmsMessagingService {
     private static final Logger log = LoggerFactory.getLogger(JmsMessagingService.class);
     public static final String NOTES_QUEUE = "fundoo.notes.jms.queue";
 
-    @Autowired(required = false)
+    @Autowired
     private JmsTemplate jmsTemplate;
 
+    // ✅ PRODUCER
     public void send(String message) {
-        if (jmsTemplate == null) {
-            return;
-        }
         jmsTemplate.convertAndSend(NOTES_QUEUE, message);
+        log.info("📤 JMS sent message: {}", message);
     }
 
+    // ✅ CONSUMER
     @JmsListener(destination = NOTES_QUEUE)
     public void receive(String message) {
-        log.info("JMS received message: {}", message);
+        log.info("📥 JMS received message: {}", message);
     }
 }
